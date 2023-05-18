@@ -1,0 +1,109 @@
+version: 0.2
+env:
+  variables:
+    shell: bash
+    bucket_name: "396112814485-codebase"
+    lambda_functions: |
+      [
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-monthly",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:krny-moodys-monthly"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-quarterly",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:krny-moodys-quarterly"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-yearly",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:krny-moodys-yearly"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-manual",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:krny-moodys-188"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/covid",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-covid"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/yahoo_function",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-yahoofin"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/fred",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-fred"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/googletrendschild",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-googletrends-child"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/googletrendsclient",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-googletrends-client"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/googletrendsparent",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-googletrends-parent"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/ihs",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-ihs"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/similar-web",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-similarweb"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/similar-web-client",
+          "arn": "arn:aws:lambda:us-east-1:396112814485:function:ingestion-similarweb-client"
+        }
+      ]
+phases:
+  install:
+    commands:
+      - echo Entered the install phase....
+      - apt-get update -y
+      - apt-get install -y zip
+      - apt-get install -y awscli
+    finally:
+      - echo This always runs even if the update or install command fails 
+  build:
+    commands:
+      - echo Entered the build phase......
+      - |
+        for function in $(echo $lambda_functions | jq -c '.[]'); do
+          name=$(echo $function | jq -r '.name')
+          folder=$(echo $function | jq -r '.folder')
+          arn=$(echo $function | jq -r '.arn')
+          cd ${CODEBUILD_SRC_DIR}/${folder}
+          aws s3 cp s3://${bucket_name}/${folder}/${name}.zip ${CODEBUILD_SRC_DIR}/${folder}/${name}.zip
+          unzip -q ${name}.zip -d ${CODEBUILD_SRC_DIR}/${folder}/unzipped/
+          if ! cmp -s ${CODEBUILD_SRC_DIR}/${folder}/${name} ${CODEBUILD_SRC_DIR}/${folder}/unzipped/${name}; then
+            zip -r -X ${name}.zip ${name} -x buildspec.yml
+            aws s3 cp ${CODEBUILD_SRC_DIR}/${folder}/${name}.zip s3://${bucket_name}/${folder}/${name}.zip 
+            aws lambda update-function-code --function-name ${arn} --s3-bucket ${bucket_name} --s3-key "${folder}/${name}.zip"
+          else
+            echo ${name} has not changed. Skipping copy to S3.
+          fi
+        done
+    finally:
+      - echo Installation Completed......
+  post_build:
+    commands:
+      - echo Entered the post_build phase....
+      - echo Build completed on `date`
+      
+      

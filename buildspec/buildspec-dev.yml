@@ -1,0 +1,92 @@
+version: 0.2
+env:
+  variables:
+    shell: bash
+    bucket_name: "kearney-sensing-code-tf"
+    lambda_functions: |
+      [
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-monthly",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-moodys-monthly-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-quarterly",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-moodys-quarterly-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/moodys-yearly",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-moodys-yearly-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/covid",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-covid-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/yahoo_function",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-yahoo-function-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/fred",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-fred-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/googletrendschild",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-google-trends-child-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/googletrendsparent",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-google-trends-parent-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/ihs",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-ihs-tf"
+        },
+        {
+          "name": "lambda_function.py",
+          "folder": "functions/similar_web",
+          "arn": "arn:aws:lambda:us-east-1:287882505924:function:dev-krny-similar-web-tf"
+        }
+      ]
+phases:
+  install:
+    commands:
+      - echo Entered the install phase....
+      - apt-get update -y
+      - apt-get install -y zip
+      - apt-get install -y awscli
+    finally:
+      - echo This always runs even if the update or install command fails 
+  build:
+    commands:
+      - echo Entered the build phase......
+      - |
+        for function in $(echo $lambda_functions | jq -c '.[]'); do
+          name=$(echo $function | jq -r '.name')
+          folder=$(echo $function | jq -r '.folder')
+          arn=$(echo $function | jq -r '.arn')
+          cd ${CODEBUILD_SRC_DIR}/${folder}
+          aws s3 cp s3://${bucket_name}/${folder}/${name}.zip ${CODEBUILD_SRC_DIR}/${folder}/${name}.zip
+          unzip -q ${name}.zip -d ${CODEBUILD_SRC_DIR}/${folder}/unzipped/
+          if ! cmp -s ${CODEBUILD_SRC_DIR}/${folder}/${name} ${CODEBUILD_SRC_DIR}/${folder}/unzipped/${name}; then
+            zip -r -X ${name}.zip ${name} -x buildspec.yml
+            aws s3 cp ${CODEBUILD_SRC_DIR}/${folder}/${name}.zip s3://${bucket_name}/${folder}/${name}.zip 
+            aws lambda update-function-code --function-name ${arn} --s3-bucket ${bucket_name} --s3-key "${folder}/${name}.zip"
+          else
+            echo ${name} has not changed. Skipping copy to S3.
+          fi
+        done
+    finally:
+      - echo Installation Completed......
+  post_build:
+    commands:
+      - echo Entered the post_build phase....
+      - echo Build completed on `date`
