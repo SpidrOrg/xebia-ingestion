@@ -72,6 +72,12 @@ env:
         }
       ]
 phases:
+  build:
+        commands:
+        - cd "$CODEBUILD_SRC_DIR"
+        - aws sts get-caller-identity
+        - node putValues.js
+        
   install:
     commands:
       - echo Entered the install phase....

@@ -21,7 +21,7 @@ const TOKENS = {
 }
 
 console.log(TOKENS)
-const replaceFilePath = path.join(__dirname, "./envs/stage/terragrunt.hcl");
+const replaceFilePath = path.join(__dirname, "./buildspec/buildspec-stage.yml");
 let fileContents = fs.readFileSync(replaceFilePath, "utf-8");
 Object.keys(TOKENS).forEach(token=>{
   fileContents = fileContents.replaceAll(token, TOKENS[token]);
@@ -45,5 +45,5 @@ function recursivelyReplaceTokens(startPath){
   })
 }
 
-const pathToInfraFolder = path.join(__dirname, "./envs/stage");
+const pathToInfraFolder = path.join(__dirname, "./buildspec");
 recursivelyReplaceTokens(pathToInfraFolder);
