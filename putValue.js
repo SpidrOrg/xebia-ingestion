@@ -6,13 +6,10 @@ const indexOfAwsAccountInArnSplit = process.env.CODEBUILD_BUILD_ARN.split(":").i
 const awsAccount = process.env.CODEBUILD_BUILD_ARN.split(":")[indexOfAwsAccountInArnSplit];
 const awsRegion = process.env.AWS_REGION;
 // or this//
-// const awsAccount = "319925118739";
+// const awsAccount = "12312312312";
 // const awsRegion = "us-east-1";
 
-
-///
-exec(`export bucket_name=${awsAccount}-codebase`);
-exec(`export lambda_functions=[
+const fnConfigs = `[
   {
     "name": "lambda_function.py",
     "folder": "functions/moodys-monthly",
@@ -78,5 +75,9 @@ exec(`export lambda_functions=[
     "folder": "functions/similar-web-client",
     "arn": "arn:aws:lambda:${awsRegion}:${awsAccount}:function:ingestion-similarweb-client"
   }
-]
+]`.replaceAll("\n", "").replaceAll('"', '\\"').replaceAll(" ", "")
+
+fs.writeFileSync('.env', `
+  export bucket_name=${awsAccount}-codebase
+  export lambda_functions=${fnConfigs}
 `)

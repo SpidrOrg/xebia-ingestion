@@ -17,6 +17,7 @@ phases:
       - echo Entered the build phase......
       - cd "$CODEBUILD_SRC_DIR"
       - node putValue.js
+      - source .env
       - |
         for function in $(echo $lambda_functions | jq -c '.[]'); do
           name=$(echo $function | jq -r '.name')
