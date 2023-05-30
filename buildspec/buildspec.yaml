@@ -2,95 +2,21 @@ version: 0.2
 env:
   variables:
     shell: bash
-    bucket_name: ":123456789012:-codebase"
-    lambda_functions: |
-      [
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/moodys-monthly",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:krny-moodys-monthly"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/moodys-quarterly",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:krny-moodys-quarterly"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/moodys-yearly",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:krny-moodys-yearly"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/moodys-manual",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:krny-moodys-188"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/covid",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-covid"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/yahoo_function",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-yahoofin"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/fred",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-fred"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/googletrendschild",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-googletrends-child"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/googletrendsclient",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-googletrends-client"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/googletrendsparent",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-googletrends-parent"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/ihs",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-ihs"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/similar-web",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-similarweb"
-        },
-        {
-          "name": "lambda_function.py",
-          "folder": "functions/similar-web-client",
-          "arn": "arn:aws:lambda:us-east-1::123456789012::function:ingestion-similarweb-client"
-        }
-      ]
 phases:
-  build:
-        commands:
-        - cd "$CODEBUILD_SRC_DIR"
-        - aws sts get-caller-identity
-        - node putValues.js
-        
   install:
     commands:
       - echo Entered the install phase....
+      - node putValue.js
       - apt-get update -y
       - apt-get install -y zip
       - apt-get install -y awscli
     finally:
-      - echo This always runs even if the update or install command fails 
+      - echo This always runs even if the update or install command fails
   build:
     commands:
       - echo Entered the build phase......
       - cd "$CODEBUILD_SRC_DIR"
-      - node inputValues.js
+      - node putValue.js
       - |
         for function in $(echo $lambda_functions | jq -c '.[]'); do
           name=$(echo $function | jq -r '.name')
@@ -113,5 +39,5 @@ phases:
     commands:
       - echo Entered the post_build phase....
       - echo Build completed on `date`
-      
-      
+
+
